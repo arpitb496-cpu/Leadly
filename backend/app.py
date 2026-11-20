@@ -1,4 +1,12 @@
 import os
+import sys
+from pathlib import Path
+
+# Ensure backend directory is in sys.path so modules like config, models, routes resolve from anywhere
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 from config import Config
@@ -9,8 +17,9 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # Enable CORS for frontend requests
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    # Enable CORS for frontend requests using ALLOWED_ORIGINS
+    allowed_origins = app.config.get('ALLOWED_ORIGINS', '*')
+    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
     # Initialize database
     db.init_app(app)
@@ -22,7 +31,7 @@ def create_app(config_class=Config):
     def health():
         return jsonify({'status': 'ok', 'message': 'Leadly API is running'}), 200
 
-    # Ensure tables exist
+    # Ensure tables exist automatically on startup
     with app.app_context():
         db.create_all()
 

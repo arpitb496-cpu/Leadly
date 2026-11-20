@@ -14,16 +14,16 @@ A minimal, premium full-stack Lead Management application built with a Flask + S
 
 ```text
 Leadly/
-├── .env.example              # Root environment template (Port 5001 default)
+├── .env.example              # Root environment template (Port 5001, DATABASE_URL, ALLOWED_ORIGINS)
 ├── .gitignore                # Git ignore rules (.env, .venv, node_modules, *.db, dist, etc.)
-├── README.md                 # Complete documentation and setup guide
-├── requirements.txt          # Single source of truth for Python dependencies
+├── README.md                 # Complete documentation, setup & deployment guide
+├── requirements.txt          # Single source of truth for Python dependencies (Flask, Gunicorn, Psycopg2, etc.)
 ├── docs/                     # Documentation assets and screenshots
 │   └── screenshot.png
 │
 ├── backend/
 │   ├── app.py                # Flask app factory, CORS, and entry point (Port 5001)
-│   ├── config.py             # App & SQLite configuration (reads PORT from env)
+│   ├── config.py             # App & SQLite/Postgres configuration (reads PORT, DATABASE_URL, ALLOWED_ORIGINS)
 │   ├── models.py             # SQLAlchemy Lead model with indexed fields
 │   ├── routes.py             # REST API endpoints (/api/leads and /api/leads/stats)
 │   ├── validation.py         # Payload & query parameter validation logic
@@ -42,7 +42,7 @@ Leadly/
         ├── index.css         # Minimal monochrome CSS design tokens
         ├── App.css           # Component styles (table, cards, modals, badges)
         ├── services/
-        │   └── api.js        # Centralized REST API client
+        │   └── api.js        # Centralized REST API client (supports VITE_API_URL and /api fallback)
         └── components/
             ├── DashboardStats.jsx     # Status metrics cards with interactive filter
             ├── DeleteConfirmModal.jsx # Styled deletion confirmation modal
@@ -91,7 +91,7 @@ cd Leadly
    ```
    - The backend runs at `http://localhost:5001`.
    - The port is configurable via the `PORT` environment variable (defaults to `5001` to prevent conflicts with macOS AirPlay on port `5000`).
-   - The SQLite database (`leads.db` inside `backend/`) and its tables are **created automatically** upon first startup.
+   - The SQLite database (`leads.db` inside `backend/`) and its tables are **created automatically** upon startup.
 
 4. **Run the Automated Pytest Suite:**
    In a terminal with the virtual environment activated:
@@ -122,10 +122,65 @@ cd Leadly
 
 ---
 
+## Deployment on Render
+
+Leadly is configured for quick and seamless deployment on [Render](https://render.com) using two decoupled services: a **Web Service** for the Flask API and a **Static Site** for the React frontend.
+
+### 1. Backend Web Service (Flask + Gunicorn)
+
+1. On Render, click **New +** and select **Web Service**.
+2. Connect your `Leadly` repository.
+3. Configure the service settings:
+   - **Environment:** `Python 3`
+   - **Root Directory:** *(leave blank to run from repo root)*
+   - **Build Command:**
+     ```bash
+     pip install -r requirements.txt
+     ```
+   - **Start Command:**
+     ```bash
+     gunicorn "backend.app:app"
+     ```
+     *(Or with explicit port binding: `gunicorn "backend.app:app" --bind 0.0.0.0:$PORT`)*
+4. Set the following **Environment Variables**:
+   - `PYTHON_VERSION`: `3.9` (or `3.10`+)
+   - `DATABASE_URL`: Your Render PostgreSQL database connection string (if using Render Postgres). If your URL starts with `postgres://`, Leadly automatically converts it to `postgresql://` for SQLAlchemy. If `DATABASE_URL` is omitted, Leadly automatically falls back to an SQLite database file.
+   - `ALLOWED_ORIGINS`: The URL of your deployed frontend (e.g. `https://leadly.onrender.com`), or `*` to allow all origins.
+   - `SECRET_KEY`: A strong random string for Flask session security.
+5. Deploy the service. Database tables are **automatically created on startup** via `db.create_all()`.
+
+---
+
+### 2. Frontend Static Site (React + Vite)
+
+1. On Render, click **New +** and select **Static Site**.
+2. Connect your `Leadly` repository.
+3. Configure the static site settings:
+   - **Root Directory:** *(leave blank)*
+   - **Build Command:**
+     ```bash
+     cd frontend && npm install && npm run build
+     ```
+   - **Publish Directory:**
+     ```bash
+     frontend/dist
+     ```
+4. Set the following **Environment Variable**:
+   - `VITE_API_URL`: The full URL to your deployed backend API with `/api` appended (e.g. `https://leadly-api.onrender.com/api`).
+5. Under **Redirects/Rewrites**, add an SPA rewrite:
+   - **Source:** `/*`
+   - **Destination:** `/index.html`
+   - **Action:** `Rewrite`
+6. Deploy the site.
+
+---
+
 ## Tech Chosen and Why
 
-- **Backend: Flask + SQLite (Flask-SQLAlchemy 3.x)**
-  - *Why:* Flask provides an unopinionated, lightweight framework without unnecessary overhead. SQLAlchemy 2.0+ ORM mapping offers clean models, indexed queries on `name` and `status`, and zero-friction in-memory SQLite isolation for fast automated testing (`sqlite:///:memory:`).
+- **Backend: Flask + SQLite/PostgreSQL (Flask-SQLAlchemy 3.x)**
+  - *Why:* Flask provides an unopinionated, lightweight framework without unnecessary overhead. SQLAlchemy 2.0+ ORM mapping offers clean models, indexed queries on `name` and `status`, and zero-friction portability between SQLite locally and PostgreSQL on Render.
+- **Production Server: Gunicorn**
+  - *Why:* Robust, WSGI-compliant HTTP server designed to handle concurrency with multiple worker processes in cloud container environments.
 - **Frontend: React 18 + Vite**
   - *Why:* Vite delivers instantaneous Hot Module Replacement (HMR) and sub-second production builds. React's component model and hooks (`useState`, `useEffect`, `useCallback`, `useMemo`) provide clear and reactive state synchronization without bulky external state libraries.
 - **Styling: Minimalist Monochrome Theme (NexBank-Inspired)**
