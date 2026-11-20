@@ -20,7 +20,7 @@ def create_app(config_class=Config):
 
     @app.route('/api/health', methods=['GET'])
     def health():
-        return jsonify({'status': 'ok', 'message': 'Lead Manager API is running'}), 200
+        return jsonify({'status': 'ok', 'message': 'Leadly API is running'}), 200
 
     # Ensure tables exist
     with app.app_context():
@@ -31,5 +31,5 @@ def create_app(config_class=Config):
 app = create_app()
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))
+    port = app.config.get('PORT', int(os.environ.get('PORT', 5001)))
     app.run(host='0.0.0.0', port=port, debug=True)
