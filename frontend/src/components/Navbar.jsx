@@ -13,7 +13,7 @@ export default function Navbar({ onOpenCreateModal }) {
             </svg>
           </div>
           <div>
-            <h1 className="brand-title">Lead Manager</h1>
+            <h1 className="brand-title">Leadly</h1>
             <p className="brand-subtitle">Streamlined Lead Tracking & Management</p>
           </div>
         </div>

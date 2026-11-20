@@ -281,7 +281,7 @@ export default function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Lead Manager &bull; Flask + SQLite &amp; React (Vite)</p>
+        <p>Leadly &bull; Flask + SQLite &amp; React (Vite)</p>
       </footer>
 
       {/* Add / Edit Lead Form Modal */}
