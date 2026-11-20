@@ -14,9 +14,12 @@ def get_database_uri():
         # Fall back to SQLite locally when DATABASE_URL is not set
         return f"sqlite:///{BASE_DIR / 'leads.db'}"
     db_url = db_url.strip()
-    # If DATABASE_URL starts with "postgres://" convert it to "postgresql://" for SQLAlchemy
+    # Explicitly use psycopg2 driver for PostgreSQL to prevent SQLAlchemy
+    # from selecting psycopg (v3) when only psycopg2-binary is installed:
     if db_url.startswith('postgres://'):
-        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+        db_url = db_url.replace('postgres://', 'postgresql+psycopg2://', 1)
+    elif db_url.startswith('postgresql://'):
+        db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
     return db_url
 
 def get_allowed_origins():

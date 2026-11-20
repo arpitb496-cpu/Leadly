@@ -144,7 +144,7 @@ Leadly is configured for quick and seamless deployment on [Render](https://rende
      *(Or with explicit port binding: `gunicorn "backend.app:app" --bind 0.0.0.0:$PORT`)*
 4. Set the following **Environment Variables**:
    - `PYTHON_VERSION`: `3.9` (or `3.10`+)
-   - `DATABASE_URL`: Your Render PostgreSQL database connection string (if using Render Postgres). If your URL starts with `postgres://`, Leadly automatically converts it to `postgresql://` for SQLAlchemy. If `DATABASE_URL` is omitted, Leadly automatically falls back to an SQLite database file.
+   - `DATABASE_URL`: Your Render PostgreSQL database connection string (if using Render Postgres). If your URL starts with `postgres://` or `postgresql://`, Leadly automatically normalizes it to `postgresql+psycopg2://` for explicit psycopg2 driver compatibility. If `DATABASE_URL` is omitted, Leadly automatically falls back to an SQLite database file.
    - `ALLOWED_ORIGINS`: The URL of your deployed frontend (e.g. `https://leadly.onrender.com`), or `*` to allow all origins.
    - `SECRET_KEY`: A strong random string for Flask session security.
 5. Deploy the service. Database tables are **automatically created on startup** via `db.create_all()`.
