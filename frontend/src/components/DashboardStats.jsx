@@ -7,35 +7,35 @@ export default function DashboardStats({ stats, activeStatus, onSelectStatus }) 
       label: 'Total Leads',
       count: stats?.total ?? 0,
       colorClass: 'stat-total',
-      dotColor: '#4f46e5',
+      dotColor: '#000000',
     },
     {
       key: 'New',
       label: 'New',
       count: stats?.by_status?.New ?? stats?.new ?? 0,
       colorClass: 'stat-new',
-      dotColor: '#2563eb', // Clean vibrant Blue
+      dotColor: '#2563eb', // Blue
     },
     {
       key: 'Contacted',
       label: 'Contacted',
       count: stats?.by_status?.Contacted ?? stats?.contacted ?? 0,
       colorClass: 'stat-contacted',
-      dotColor: '#9333ea', // Clear distinct Purple
+      dotColor: '#f97316', // Orange
     },
     {
       key: 'Qualified',
       label: 'Qualified',
       count: stats?.by_status?.Qualified ?? stats?.qualified ?? 0,
       colorClass: 'stat-qualified',
-      dotColor: '#059669', // Clear distinct Green
+      dotColor: '#16a34a', // Green
     },
     {
       key: 'Lost',
       label: 'Lost',
       count: stats?.by_status?.Lost ?? stats?.lost ?? 0,
       colorClass: 'stat-lost',
-      dotColor: '#dc2626', // Clear distinct Red
+      dotColor: '#dc2626', // Red
     },
   ];
 

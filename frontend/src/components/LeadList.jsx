@@ -14,15 +14,13 @@ const getInitials = (name) => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-// Deterministic pastel avatar background color based on name
+// Deterministic neutral monochrome avatar based on name (NexBank style)
 const getAvatarColor = (name = '') => {
   const colors = [
-    { bg: '#e0e7ff', text: '#3730a3' }, // Indigo
-    { bg: '#e0f2fe', text: '#0369a1' }, // Sky
-    { bg: '#f3e8ff', text: '#6b21a8' }, // Purple
-    { bg: '#dcfce7', text: '#15803d' }, // Emerald
-    { bg: '#fef3c7', text: '#b45309' }, // Amber
-    { bg: '#fee2e2', text: '#b91c1c' }, // Rose
+    { bg: '#f4f4f5', text: '#18181b', border: '#e4e4e7' },
+    { bg: '#e4e4e7', text: '#09090b', border: '#d4d4d8' },
+    { bg: '#18181b', text: '#ffffff', border: '#18181b' },
+    { bg: '#f4f4f5', text: '#27272a', border: '#e4e4e7' },
   ];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -247,7 +245,7 @@ export default function LeadList({
                       <div className="lead-name-cell">
                         <div
                           className="lead-avatar"
-                          style={{ backgroundColor: avatar.bg, color: avatar.text }}
+                          style={{ backgroundColor: avatar.bg, color: avatar.text, borderColor: avatar.border }}
                           aria-hidden="true"
                         >
                           {getInitials(lead.name)}
