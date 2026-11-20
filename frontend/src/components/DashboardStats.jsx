@@ -14,28 +14,28 @@ export default function DashboardStats({ stats, activeStatus, onSelectStatus }) 
       label: 'New',
       count: stats?.by_status?.New ?? stats?.new ?? 0,
       colorClass: 'stat-new',
-      dotColor: '#1d4ed8',
+      dotColor: '#2563eb', // Clean vibrant Blue
     },
     {
       key: 'Contacted',
       label: 'Contacted',
       count: stats?.by_status?.Contacted ?? stats?.contacted ?? 0,
       colorClass: 'stat-contacted',
-      dotColor: '#6d28d9',
+      dotColor: '#9333ea', // Clear distinct Purple
     },
     {
       key: 'Qualified',
       label: 'Qualified',
       count: stats?.by_status?.Qualified ?? stats?.qualified ?? 0,
       colorClass: 'stat-qualified',
-      dotColor: '#047857',
+      dotColor: '#059669', // Clear distinct Green
     },
     {
       key: 'Lost',
       label: 'Lost',
       count: stats?.by_status?.Lost ?? stats?.lost ?? 0,
       colorClass: 'stat-lost',
-      dotColor: '#b91c1c',
+      dotColor: '#dc2626', // Clear distinct Red
     },
   ];
 
@@ -49,7 +49,7 @@ export default function DashboardStats({ stats, activeStatus, onSelectStatus }) 
             type="button"
             className={`dashboard-stat-card ${card.colorClass} ${isSelected ? 'selected' : ''}`}
             onClick={() => onSelectStatus(card.key)}
-            title={`Click to filter by ${card.label}`}
+            title={`Filter by ${card.label}`}
           >
             <div className="stat-card-header">
               <span className="stat-dot-indicator" style={{ backgroundColor: card.dotColor }} />
