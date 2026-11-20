@@ -4,6 +4,7 @@ import DashboardStats from './components/DashboardStats';
 import LeadList from './components/LeadList';
 import LeadFormModal from './components/LeadFormModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
+import ToastContainer from './components/Toast';
 import { api } from './services/api';
 import './App.css';
 
@@ -18,9 +19,19 @@ export default function App() {
     by_status: { New: 0, Contacted: 0, Qualified: 0, Lost: 0 },
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [isApiDown, setIsApiDown] = useState(false);
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const addToast = useCallback((message, type = 'success') => {
+    const id = Date.now() + Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   // Search and status filter (both call API)
   const [statusFilter, setStatusFilter] = useState('All');
@@ -57,8 +68,8 @@ export default function App() {
       if (statsData) {
         setStats(statsData);
       }
-    } catch (err) {
-      // Handled silently or consolidated with main error
+    } catch {
+      // Handled silently
     }
   }, []);
 
@@ -66,7 +77,6 @@ export default function App() {
   const fetchLeads = useCallback(async () => {
     try {
       setLoading(true);
-      setError('');
       setIsApiDown(false);
 
       const [leadsData] = await Promise.all([
@@ -96,15 +106,14 @@ export default function App() {
         err.message?.toLowerCase().includes('connect') ||
         err.message?.toLowerCase().includes('fetch');
       setIsApiDown(isDown);
-      setError(
-        isDown
-          ? 'Cannot connect to the Flask API. Make sure the backend server is running on http://localhost:5001.'
-          : err.message || 'Failed to load leads from server.'
-      );
+      const errMsg = isDown
+        ? 'Cannot connect to the Flask API. Make sure the backend server is running on http://localhost:5001.'
+        : err.message || 'Failed to load leads from server.';
+      addToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, debouncedSearch, page, perPage, sortBy, sortOrder, fetchStats]);
+  }, [statusFilter, debouncedSearch, page, perPage, sortBy, sortOrder, fetchStats, addToast]);
 
   useEffect(() => {
     fetchLeads();
@@ -117,6 +126,12 @@ export default function App() {
 
   const handleStatusFilterChange = (val) => {
     setStatusFilter(val);
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('All');
     setPage(1);
   };
 
@@ -160,19 +175,16 @@ export default function App() {
   // Handle Save (Create or Update)
   const handleSaveLead = async (formData, leadId) => {
     if (leadId) {
-      // Update existing lead via PUT /api/leads/<id>
-      await api.updateLead(leadId, formData);
-      setSuccessMessage('Lead updated successfully!');
+      const updated = await api.updateLead(leadId, formData);
+      addToast(`Lead "${updated.name || formData.name}" updated successfully!`, 'success');
     } else {
-      // Create new lead via POST /api/leads
-      await api.createLead(formData);
-      setSuccessMessage('Lead created successfully!');
+      const created = await api.createLead(formData);
+      addToast(`Lead "${created.name || formData.name}" added successfully!`, 'success');
     }
     await fetchLeads();
-    setTimeout(() => setSuccessMessage(''), 3500);
   };
 
-  // Open delete confirmation modal
+  // Open styled delete confirmation modal
   const handleOpenDeleteModal = (lead) => {
     setLeadToDelete(lead);
   };
@@ -188,12 +200,11 @@ export default function App() {
     try {
       setIsDeleting(true);
       await api.deleteLead(leadToDelete.id);
-      setSuccessMessage(`Lead "${leadToDelete.name}" deleted successfully.`);
+      addToast(`Lead "${leadToDelete.name}" deleted successfully.`, 'success');
       handleCloseDeleteModal();
       await fetchLeads();
-      setTimeout(() => setSuccessMessage(''), 3500);
     } catch (err) {
-      setError(err.message || 'Failed to delete lead.');
+      addToast(err.message || 'Failed to delete lead.', 'error');
       handleCloseDeleteModal();
     }
   };
@@ -202,15 +213,19 @@ export default function App() {
   const handleQuickStatusChange = async (leadId, newStatus) => {
     try {
       await api.updateLead(leadId, { status: newStatus });
+      addToast(`Status updated to "${newStatus}".`, 'success');
       await fetchLeads();
     } catch (err) {
-      setError(err.message || 'Failed to update lead status.');
+      addToast(err.message || 'Failed to update lead status.', 'error');
     }
   };
 
   return (
     <div className="app-container">
       <Navbar onOpenCreateModal={handleOpenCreateModal} />
+
+      {/* Floating Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       <main className="main-content">
         {/* Small Dashboard Cards (showing counts from GET /api/leads/stats) */}
@@ -220,38 +235,12 @@ export default function App() {
           onSelectStatus={handleSelectStatCard}
         />
 
-        {/* Success Alert Banner */}
-        {successMessage && (
-          <div className="alert alert-success">
-            <span>✓ {successMessage}</span>
-            <button className="alert-close" onClick={() => setSuccessMessage('')}>
-              &times;
-            </button>
-          </div>
-        )}
-
-        {/* Global Error Banner */}
-        {error && !isApiDown && (
-          <div className="alert alert-error">
-            <span>{error}</span>
-            <button className="alert-close" onClick={() => setError('')}>
-              &times;
-            </button>
-          </div>
-        )}
-
-        {/* Main View Area: Loading State, Error State, or Leads Table */}
-        {loading && leads.length === 0 ? (
-          <div className="state-card loading-card">
-            <div className="spinner"></div>
-            <h3>Loading leads...</h3>
-            <p>Connecting to backend API at <code>http://localhost:5001/api</code></p>
-          </div>
-        ) : isApiDown ? (
+        {/* API Down State */}
+        {isApiDown ? (
           <div className="state-card error-card">
             <div className="state-card-icon">⚡</div>
             <h3>API Connection Unavailable</h3>
-            <p>{error}</p>
+            <p>Cannot connect to the Flask API. Make sure the backend server is running on http://localhost:5001.</p>
             <div className="state-card-code">
               <span>Start the Flask backend server:</span>
               <code>cd backend &amp;&amp; python app.py</code>
@@ -268,6 +257,7 @@ export default function App() {
         ) : (
           <LeadList
             leads={leads}
+            loading={loading}
             searchQuery={searchQuery}
             onSearchChange={handleSearchChange}
             statusFilter={statusFilter}
@@ -284,6 +274,8 @@ export default function App() {
             onEditLead={handleOpenEditModal}
             onDeleteLead={handleOpenDeleteModal}
             onQuickStatusChange={handleQuickStatusChange}
+            onOpenCreateModal={handleOpenCreateModal}
+            onClearFilters={handleClearFilters}
           />
         )}
       </main>
@@ -300,7 +292,7 @@ export default function App() {
         leadToEdit={editingLead}
       />
 
-      {/* Delete Confirmation Modal */}
+      {/* Styled Delete Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={Boolean(leadToDelete)}
         lead={leadToDelete}

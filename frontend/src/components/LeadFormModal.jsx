@@ -48,7 +48,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear field-level error as user types
+    // Clear inline error as the user modifies the field
     if (fieldErrors[name]) {
       setFieldErrors((prev) => {
         const next = { ...prev };
@@ -58,7 +58,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
     }
   };
 
-  // Frontend validation strictly matching backend rules
+  // Frontend validation matching backend rules
   const validateForm = () => {
     const errors = {};
 
@@ -71,7 +71,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
     if (!formData.email || !formData.email.trim()) {
       errors.email = 'Email is required';
     } else if (!EMAIL_REGEX.test(formData.email.trim())) {
-      errors.email = 'Invalid email address format';
+      errors.email = 'Invalid email address format (e.g. user@example.com)';
     }
 
     // 3. Status: required, must be from allowed list
@@ -85,7 +85,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
     if (formData.phone && formData.phone.trim()) {
       const phoneDigits = formData.phone.trim();
       if (!PHONE_REGEX.test(phoneDigits)) {
-        errors.phone = 'Phone must contain only digits (7-15 characters)';
+        errors.phone = 'Phone must contain only digits (7 to 15 numbers)';
       }
     }
 
@@ -103,14 +103,14 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
     e.preventDefault();
     setGeneralError('');
 
-    // Run client-side validation first
+    // Client-side validation check
     const clientErrors = validateForm();
     if (Object.keys(clientErrors).length > 0) {
       setFieldErrors(clientErrors);
       return;
     }
 
-    // Prepare payload
+    // Clean payload
     const payload = {
       name: formData.name.trim(),
       email: formData.email.trim(),
@@ -125,7 +125,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
       await onSave(payload, leadToEdit ? leadToEdit.id : null);
       onClose();
     } catch (err) {
-      // Capture and display backend field-wise errors on the form
+      // Show backend error messages on the form
       if (err.fieldErrors && Object.keys(err.fieldErrors).length > 0) {
         setFieldErrors(err.fieldErrors);
       } else {
@@ -140,8 +140,20 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{leadToEdit ? 'Edit Lead' : 'Add New Lead'}</h2>
-          <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
+          <div className="modal-title-group">
+            <h2>{leadToEdit ? 'Edit Lead' : 'Add New Lead'}</h2>
+            <p className="modal-subtitle">
+              {leadToEdit
+                ? 'Update contact information and lead status.'
+                : 'Enter prospect details to add them to your pipeline.'}
+            </p>
+          </div>
+          <button
+            className="modal-close-btn"
+            onClick={onClose}
+            aria-label="Close modal"
+            disabled={submitting}
+          >
             &times;
           </button>
         </div>
@@ -155,87 +167,94 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
             )}
 
             <div className="form-grid">
-              {/* Name */}
+              {/* Full Name */}
               <div className="form-group">
-                <label htmlFor="name">
-                  Name <span className="required">*</span>
+                <label htmlFor="lead-name">
+                  Full Name <span className="required">*</span>
                 </label>
                 <input
-                  id="name"
+                  id="lead-name"
                   type="text"
                   name="name"
                   className={`form-control ${fieldErrors.name ? 'input-error' : ''}`}
-                  placeholder="e.g. John Doe"
+                  placeholder="e.g. Jane Doe"
                   value={formData.name}
                   onChange={handleChange}
+                  disabled={submitting}
                   autoFocus
                 />
                 {fieldErrors.name && (
-                  <span className="field-error-text">{fieldErrors.name}</span>
+                  <span className="field-error-text">⚠ {fieldErrors.name}</span>
                 )}
               </div>
 
-              {/* Email */}
+              {/* Email Address */}
               <div className="form-group">
-                <label htmlFor="email">
-                  Email <span className="required">*</span>
+                <label htmlFor="lead-email">
+                  Email Address <span className="required">*</span>
                 </label>
                 <input
-                  id="email"
+                  id="lead-email"
                   type="email"
                   name="email"
                   className={`form-control ${fieldErrors.email ? 'input-error' : ''}`}
-                  placeholder="e.g. john@example.com"
+                  placeholder="e.g. jane@company.com"
                   value={formData.email}
                   onChange={handleChange}
+                  disabled={submitting}
                 />
                 {fieldErrors.email && (
-                  <span className="field-error-text">{fieldErrors.email}</span>
+                  <span className="field-error-text">⚠ {fieldErrors.email}</span>
                 )}
               </div>
 
               {/* Phone & Company */}
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="phone">Phone (7-15 digits)</label>
+                  <label htmlFor="lead-phone">Phone Number</label>
                   <input
-                    id="phone"
+                    id="lead-phone"
                     type="tel"
                     name="phone"
                     className={`form-control ${fieldErrors.phone ? 'input-error' : ''}`}
                     placeholder="e.g. 5550199123"
                     value={formData.phone}
                     onChange={handleChange}
+                    disabled={submitting}
                   />
+                  <span className="field-hint">7–15 digits only, no spaces/dashes</span>
                   {fieldErrors.phone && (
-                    <span className="field-error-text">{fieldErrors.phone}</span>
+                    <span className="field-error-text">⚠ {fieldErrors.phone}</span>
                   )}
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="company">Company</label>
+                  <label htmlFor="lead-company">Company</label>
                   <input
-                    id="company"
+                    id="lead-company"
                     type="text"
                     name="company"
                     className="form-control"
                     placeholder="e.g. Acme Corp"
                     value={formData.company}
                     onChange={handleChange}
+                    disabled={submitting}
                   />
+                  <span className="field-hint">Optional business name</span>
                 </div>
               </div>
 
               {/* Source & Status Dropdowns */}
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="source">Lead Source</label>
+                  <label htmlFor="lead-source">Lead Source</label>
                   <select
-                    id="source"
+                    id="lead-source"
                     name="source"
                     className={`form-control ${fieldErrors.source ? 'input-error' : ''}`}
                     value={formData.source}
                     onChange={handleChange}
+                    disabled={submitting}
                   >
                     {SOURCE_OPTIONS.map((src) => (
                       <option key={src} value={src}>
@@ -244,20 +263,21 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
                     ))}
                   </select>
                   {fieldErrors.source && (
-                    <span className="field-error-text">{fieldErrors.source}</span>
+                    <span className="field-error-text">⚠ {fieldErrors.source}</span>
                   )}
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="status">
-                    Status <span className="required">*</span>
+                  <label htmlFor="lead-status">
+                    Lead Status <span className="required">*</span>
                   </label>
                   <select
-                    id="status"
+                    id="lead-status"
                     name="status"
                     className={`form-control ${fieldErrors.status ? 'input-error' : ''}`}
                     value={formData.status}
                     onChange={handleChange}
+                    disabled={submitting}
                   >
                     {STATUS_OPTIONS.map((st) => (
                       <option key={st} value={st}>
@@ -266,7 +286,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
                     ))}
                   </select>
                   {fieldErrors.status && (
-                    <span className="field-error-text">{fieldErrors.status}</span>
+                    <span className="field-error-text">⚠ {fieldErrors.status}</span>
                   )}
                 </div>
               </div>
@@ -282,14 +302,19 @@ export default function LeadFormModal({ isOpen, onClose, onSave, leadToEdit }) {
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting
-                ? leadToEdit
-                  ? 'Updating...'
-                  : 'Saving...'
-                : leadToEdit
-                ? 'Update Lead'
-                : 'Save Lead'}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <span className="btn-spinner" aria-hidden="true"></span>
+                  <span>{leadToEdit ? 'Updating...' : 'Saving...'}</span>
+                </>
+              ) : (
+                <span>{leadToEdit ? 'Update Lead' : 'Save Lead'}</span>
+              )}
             </button>
           </div>
         </form>

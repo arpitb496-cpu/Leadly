@@ -2,7 +2,7 @@ import React from 'react';
 
 const STATUS_LIST = ['New', 'Contacted', 'Qualified', 'Lost'];
 
-// Helper to compute lead initials (e.g., "John Doe" -> "JD", "Sarah" -> "SA")
+// Helper to compute initials
 const getInitials = (name) => {
   if (!name) return '?';
   const clean = name.trim();
@@ -14,7 +14,7 @@ const getInitials = (name) => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-// Deterministic pastel avatar background color based on name string
+// Deterministic pastel avatar background color based on name
 const getAvatarColor = (name = '') => {
   const colors = [
     { bg: '#e0e7ff', text: '#3730a3' }, // Indigo
@@ -32,8 +32,39 @@ const getAvatarColor = (name = '') => {
   return colors[index];
 };
 
+// Skeleton loading rows for table
+function SkeletonRows({ rows = 5 }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => (
+        <tr key={`skeleton-${i}`} className="skeleton-row">
+          <td>
+            <div className="lead-name-cell">
+              <div className="skeleton skeleton-avatar"></div>
+              <div className="skeleton skeleton-text" style={{ width: '110px' }}></div>
+            </div>
+          </td>
+          <td><div className="skeleton skeleton-text" style={{ width: '140px' }}></div></td>
+          <td><div className="skeleton skeleton-text" style={{ width: '90px' }}></div></td>
+          <td><div className="skeleton skeleton-text" style={{ width: '80px' }}></div></td>
+          <td><div className="skeleton skeleton-pill" style={{ width: '65px' }}></div></td>
+          <td><div className="skeleton skeleton-pill" style={{ width: '85px' }}></div></td>
+          <td><div className="skeleton skeleton-text" style={{ width: '70px' }}></div></td>
+          <td>
+            <div className="action-buttons">
+              <div className="skeleton skeleton-btn"></div>
+              <div className="skeleton skeleton-btn"></div>
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
+
 export default function LeadList({
   leads,
+  loading,
   searchQuery,
   onSearchChange,
   statusFilter,
@@ -50,6 +81,8 @@ export default function LeadList({
   onEditLead,
   onDeleteLead,
   onQuickStatusChange,
+  onOpenCreateModal,
+  onClearFilters,
 }) {
   const handleHeaderClick = (field) => {
     if (sortBy === field) {
@@ -64,11 +97,9 @@ export default function LeadList({
     return <span className="sort-indicator active">{sortOrder === 'asc' ? '▲' : '▼'}</span>;
   };
 
-  // Helper for pagination range
   const startItem = totalItems === 0 ? 0 : (page - 1) * perPage + 1;
   const endItem = Math.min(page * perPage, totalItems);
 
-  // Generate page numbers for pagination buttons
   const getPageNumbers = () => {
     const pages = [];
     const maxVisible = 5;
@@ -84,6 +115,8 @@ export default function LeadList({
     }
     return pages;
   };
+
+  const hasActiveFilters = Boolean(searchQuery.trim() || statusFilter !== 'All');
 
   return (
     <div>
@@ -116,6 +149,7 @@ export default function LeadList({
             />
             {searchQuery && (
               <button
+                type="button"
                 className="search-clear-btn"
                 onClick={() => onSearchChange('')}
                 aria-label="Clear search"
@@ -139,6 +173,18 @@ export default function LeadList({
               </option>
             ))}
           </select>
+
+          {/* Clear Filters Button if filters active */}
+          {hasActiveFilters && onClearFilters && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm clear-filters-btn"
+              onClick={onClearFilters}
+              title="Reset search and status filter"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
 
         {/* Rows Per Page */}
@@ -161,46 +207,38 @@ export default function LeadList({
         </div>
       </div>
 
-      {/* Leads Table */}
-      {leads.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">📋</div>
-          <h3>No leads found</h3>
-          <p>
-            {searchQuery || statusFilter !== 'All'
-              ? 'No leads match your current search or filter criteria.'
-              : 'Get started by adding your first lead to the system.'}
-          </p>
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="leads-table">
-            <thead>
-              <tr>
-                <th onClick={() => handleHeaderClick('name')} className="sortable-th">
-                  Name {renderSortIndicator('name')}
-                </th>
-                <th onClick={() => handleHeaderClick('email')} className="sortable-th">
-                  Email {renderSortIndicator('email')}
-                </th>
-                <th>Phone</th>
-                <th onClick={() => handleHeaderClick('company')} className="sortable-th">
-                  Company {renderSortIndicator('company')}
-                </th>
-                <th onClick={() => handleHeaderClick('source')} className="sortable-th">
-                  Source {renderSortIndicator('source')}
-                </th>
-                <th onClick={() => handleHeaderClick('status')} className="sortable-th">
-                  Status {renderSortIndicator('status')}
-                </th>
-                <th onClick={() => handleHeaderClick('created_at')} className="sortable-th">
-                  Created {renderSortIndicator('created_at')}
-                </th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leads.map((lead) => {
+      {/* Table & Empty State */}
+      <div className="table-container">
+        <table className="leads-table">
+          <thead>
+            <tr>
+              <th onClick={() => handleHeaderClick('name')} className="sortable-th">
+                Name {renderSortIndicator('name')}
+              </th>
+              <th onClick={() => handleHeaderClick('email')} className="sortable-th">
+                Email {renderSortIndicator('email')}
+              </th>
+              <th>Phone</th>
+              <th onClick={() => handleHeaderClick('company')} className="sortable-th">
+                Company {renderSortIndicator('company')}
+              </th>
+              <th onClick={() => handleHeaderClick('source')} className="sortable-th">
+                Source {renderSortIndicator('source')}
+              </th>
+              <th onClick={() => handleHeaderClick('status')} className="sortable-th">
+                Status {renderSortIndicator('status')}
+              </th>
+              <th onClick={() => handleHeaderClick('created_at')} className="sortable-th">
+                Created {renderSortIndicator('created_at')}
+              </th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <SkeletonRows rows={perPage > 5 ? 5 : perPage} />
+            ) : leads.length === 0 ? null : (
+              leads.map((lead) => {
                 const avatar = getAvatarColor(lead.name);
                 return (
                   <tr key={lead.id}>
@@ -246,12 +284,11 @@ export default function LeadList({
                           {lead.status}
                         </span>
 
-                        {/* Inline quick change dropdown */}
                         <select
                           className="status-quick-select"
                           value={lead.status}
                           onChange={(e) => onQuickStatusChange(lead.id, e.target.value)}
-                          title="Change status"
+                          title="Quick change status"
                         >
                           {STATUS_LIST.map((st) => (
                             <option key={st} value={st}>
@@ -267,7 +304,7 @@ export default function LeadList({
                       {lead.created_at ? new Date(lead.created_at).toLocaleDateString() : '-'}
                     </td>
 
-                    {/* Actions: Clean Edit & Delete Buttons with Icons */}
+                    {/* Actions: Edit & Delete */}
                     <td>
                       <div className="action-buttons">
                         <button
@@ -277,16 +314,7 @@ export default function LeadList({
                           title="Edit lead details and status"
                           aria-label={`Edit ${lead.name}`}
                         >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                           </svg>
@@ -299,16 +327,7 @@ export default function LeadList({
                           title="Delete lead"
                           aria-label={`Delete ${lead.name}`}
                         >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="3 6 5 6 21 6"></polyline>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                             <line x1="10" y1="11" x2="10" y2="17"></line>
@@ -320,18 +339,68 @@ export default function LeadList({
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
+              })
+            )}
+          </tbody>
+        </table>
 
-          {/* Full Pagination Controls */}
+        {/* Empty State when not loading and leads array is empty */}
+        {!loading && leads.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              {hasActiveFilters ? (
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>
+              ) : (
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              )}
+            </div>
+
+            <h3>{hasActiveFilters ? 'No matching leads found' : 'No leads in your pipeline yet'}</h3>
+            <p>
+              {hasActiveFilters
+                ? 'Try adjusting your search query or status filter to see other leads.'
+                : 'Start tracking contacts, opportunities, and deals by adding your first lead.'}
+            </p>
+
+            <div className="empty-state-actions">
+              {hasActiveFilters ? (
+                <button type="button" className="btn btn-secondary" onClick={onClearFilters}>
+                  Clear filters
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={onOpenCreateModal}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Add your first lead
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Full Pagination Controls */}
+        {!loading && leads.length > 0 && (
           <div className="pagination-bar">
             <span className="pagination-info">
               Showing <strong>{startItem}</strong> – <strong>{endItem}</strong> of <strong>{totalItems}</strong> leads (Page {page} of {totalPages || 1})
             </span>
 
             <div className="pagination-actions">
-              {/* First Page */}
               <button
                 className="btn btn-secondary btn-sm pagination-btn"
                 disabled={page <= 1}
@@ -340,8 +409,6 @@ export default function LeadList({
               >
                 «
               </button>
-
-              {/* Previous Page */}
               <button
                 className="btn btn-secondary btn-sm pagination-btn"
                 disabled={page <= 1}
@@ -351,7 +418,6 @@ export default function LeadList({
                 ‹ Prev
               </button>
 
-              {/* Numbered Page Buttons */}
               <div className="pagination-numbers">
                 {getPageNumbers().map((num) => (
                   <button
@@ -365,7 +431,6 @@ export default function LeadList({
                 ))}
               </div>
 
-              {/* Next Page */}
               <button
                 className="btn btn-secondary btn-sm pagination-btn"
                 disabled={page >= totalPages}
@@ -374,8 +439,6 @@ export default function LeadList({
               >
                 Next ›
               </button>
-
-              {/* Last Page */}
               <button
                 className="btn btn-secondary btn-sm pagination-btn"
                 disabled={page >= totalPages}
@@ -386,8 +449,8 @@ export default function LeadList({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
