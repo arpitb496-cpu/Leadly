@@ -4,6 +4,17 @@ A minimal, premium full-stack Lead Management application built with a Flask + S
 
 ---
 
+## Live Demo
+
+- **Frontend Application:** [https://leadly-app.onrender.com/](https://leadly-app.onrender.com/)
+- **REST API Endpoint:** [https://leadly-nqxa.onrender.com/api/leads](https://leadly-nqxa.onrender.com/api/leads)
+
+> [!NOTE]
+> - **Cold Start:** Because the backend is hosted on Render's free tier, the web service automatically spins down after periods of inactivity. The initial request may take around 50–60 seconds while the container instance wakes up. Subsequent requests will respond immediately.
+> - **Database Retention:** The free-tier Render PostgreSQL database instance expires automatically after 30 days.
+
+---
+
 ## Screenshots
 
 ![Leadly Dashboard](docs/screenshot.png)
@@ -145,7 +156,7 @@ Leadly is configured for quick and seamless deployment on [Render](https://rende
 4. Set the following **Environment Variables**:
    - `PYTHON_VERSION`: `3.9` (or `3.10`+)
    - `DATABASE_URL`: Your Render PostgreSQL database connection string (if using Render Postgres). If your URL starts with `postgres://` or `postgresql://`, Leadly automatically normalizes it to `postgresql+psycopg2://` for explicit psycopg2 driver compatibility. If `DATABASE_URL` is omitted, Leadly automatically falls back to an SQLite database file.
-   - `ALLOWED_ORIGINS`: The URL of your deployed frontend (e.g. `https://leadly.onrender.com`), or `*` to allow all origins.
+   - `ALLOWED_ORIGINS`: The URL of your deployed frontend (e.g. `https://leadly-app.onrender.com`), or `*` to allow all origins.
    - `SECRET_KEY`: A strong random string for Flask session security.
 5. Deploy the service. Database tables are **automatically created on startup** via `db.create_all()`.
 
@@ -166,7 +177,7 @@ Leadly is configured for quick and seamless deployment on [Render](https://rende
      frontend/dist
      ```
 4. Set the following **Environment Variable**:
-   - `VITE_API_URL`: The full URL to your deployed backend API with `/api` appended (e.g. `https://leadly-api.onrender.com/api`).
+   - `VITE_API_URL`: The full URL to your deployed backend API with `/api` appended (e.g. `https://leadly-nqxa.onrender.com/api`).
 5. Under **Redirects/Rewrites**, add an SPA rewrite:
    - **Source:** `/*`
    - **Destination:** `/index.html`
